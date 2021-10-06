@@ -20,7 +20,11 @@ client.on("messageCreate", async (message) => {
         if (params.length == 3) {
             if (params[1] == "prefix") {
                 config.prefix = params[2];
-                writetoconfig();//for other configs in the future if need be
+                writetoconfig();
+                message.reply("done!");
+            }else if (params[1] == "style") {
+                config.style = params[2];
+                writetoconfig();
                 message.reply("done!");
             }
         }
@@ -85,7 +89,7 @@ function writetoconfig() {
 async function getblockimage(code) {
     const browser = await puppeteer.launch();
     const page = await browser.newPage();
-    await page.goto("https://scratchblocks.github.io/#?style=scratch3&script=" + encodeURI(code));
+    await page.goto(`https://scratchblocks.github.io/#?style=${config.style?config.style:"scratch3"}&script=` + encodeURI(code));
     const content = await page.$("#preview svg");
     await page.evaluate(() => (document.body.style.background = "transparent"));
     const imageBuffer = await content.screenshot({ omitBackground: true });
