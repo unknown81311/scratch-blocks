@@ -67,7 +67,13 @@ client.on("messageCreate", async (message) => {
     }
     if (message.content.startsWith(prefix + "make")) {
         console.log(params.slice(1).join(" "));
-        const attachment = new MessageAttachment(await getblockimage(params.slice(1).join(" ")), "exmaple.png");
+        const block = await getblockimage(params.slice(1).join(" "))
+        if (!Buffer.isBuffer(block)){//added "error handling"
+            message.reply('error :(')
+            return
+        };
+
+        const attachment = new MessageAttachment(block, "exmaple.png");
         message.reply({ files: [attachment] });
     }
 });
