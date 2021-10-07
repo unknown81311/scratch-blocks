@@ -72,11 +72,6 @@ client.on("messageCreate", async (message) => {
     if (message.content.startsWith(prefix + "make")) {
         console.log(params.slice(1).join(" "));
         const block = await getblockimage(params.slice(1).join(" "))
-        if (!Buffer.isBuffer(block)){//added "error handling"
-            message.reply('error :(')
-            return
-        };
-
         const attachment = new MessageAttachment(block, "exmaple.png");
         message.reply({ files: [attachment] });
     }
@@ -90,6 +85,7 @@ async function getblockimage(code) {
     const browser = await puppeteer.launch();
     const page = await browser.newPage();
     await page.goto(`https://scratchblocks.github.io/#?style=${config.style?config.style:"scratch3"}&script=` + encodeURI(code));
+    await page.waitForSelector('#preview svg');
     const content = await page.$("#preview svg");
     await page.evaluate(() => (document.body.style.background = "transparent"));
     const imageBuffer = await content.screenshot({ omitBackground: true });
