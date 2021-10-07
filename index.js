@@ -1,17 +1,18 @@
 const { Client, Intents, MessageAttachment } = require("discord.js");
 const client = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES] });
-const config = require("./config.json");
+let config = require("./config.json");
 const fs = require("fs");
 const puppeteer = require("puppeteer");
-const { JSDOM } = require("jsdom");//idk if it is needed 
-const { window } = new JSDOM("");
-const $ = require("jquery")(window);
+
+const sleep = ms => new Promise( res => setTimeout(res, ms));
 
 client.on("ready", () => {
     console.log(`Logged in as ${client.user.tag}!`);
 });
 
 client.on("messageCreate", async (message) => {
+    config=require("./config.json");
+    console.log(config.prefix,message.content)
     const prefix = config.prefix ? config.prefix : "!";
     let params;
     if (message.content.startsWith(prefix)) params = message.content.split(" ");
@@ -70,9 +71,8 @@ client.on("messageCreate", async (message) => {
         message.reply("pong!");
     }
     if (message.content.startsWith(prefix + "make")) {
-        console.log(params.slice(1).join(" "));
         const block = await getblockimage(params.slice(1).join(" "))
-        const attachment = new MessageAttachment(block, "exmaple.png");
+        const attachment = new MessageAttachment(block, "code_blocks.png");
         message.reply({ files: [attachment] });
     }
 });
@@ -84,8 +84,9 @@ function writetoconfig() {
 async function getblockimage(code) {
     const browser = await puppeteer.launch();
     const page = await browser.newPage();
-    await page.goto(`https://scratchblocks.github.io/#?style=${config.style?config.style:"scratch3"}&script=` + encodeURI(code));
-    await page.waitForSelector('#preview svg');
+    await page.goto(`https://scratchblocks.github.io/#?style=${config.style?config.style:"scratch3"}`);
+    await page.evaluate((code) => (codeMirror.setValue(code)),code);
+    await sleep(1000);
     const content = await page.$("#preview svg");
     await page.evaluate(() => (document.body.style.background = "transparent"));
     const imageBuffer = await content.screenshot({ omitBackground: true });
