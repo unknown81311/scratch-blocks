@@ -11,69 +11,83 @@ client.on("ready", () => {
 });
 
 client.on("messageCreate", async (message) => {
-    config=require("./config.json");
-    console.log(config.prefix,message.content)
-    const prefix = config.prefix ? config.prefix : "!";
-    let params;
-    if (message.content.startsWith(prefix)) params = message.content.split(" ");
-
-    if (message.author.id == message.guild.ownerId && message.content.startsWith(prefix + "config")) {
-        if (params.length == 3) {
-            if (params[1] == "prefix") {
-                config.prefix = params[2];
-                writetoconfig();
-                message.reply("done!");
-            }else if (params[1] == "style") {
-                config.style = params[2];
-                writetoconfig();
-                message.reply("done!");
+    try{
+        config=require("./config.json");
+        console.log(config.prefix,message.content)
+        const prefix = config.prefix ? config.prefix : "!";
+        let params;
+        if (message.content.startsWith(prefix)) params = message.content.split(" ");
+    
+        if (message.author.id == message.guild.ownerId && message.content.startsWith(prefix + "config")) {
+            if (params.length == 3) {
+                if (params[1] == "prefix") {
+                    config.prefix = params[2];
+                    writetoconfig();
+                    message.reply("done!");
+                }else if (params[1] == "style") {
+                    config.style = params[2];
+                    writetoconfig();
+                    message.reply("done!");
+                }
             }
         }
+        if (message.content === prefix + "help") {
+            message.reply({
+                embeds: [
+                    {
+                        color: 65290,
+                        type: "rich",
+                        title: "help",
+                        description: "here is what I got!",
+                        fields: [
+                            {
+                                name: "help",
+                                value: "shows this message!",
+                                inline: true,
+                            },
+                            {
+                                name: "config",
+                                value: "configure this bot.",
+                                inline: true,
+                            },
+                            {
+                                name: "make",
+                                value: "replies with scratch block(s) of the text you provide.",
+                                inline: true,
+                            },
+                            {
+                                name: "help formatting",
+                                value: "shows a help message for formatting the make message.",
+                                inline: true,
+                            },
+                        ],
+                    },
+                ],
+            });
+        }
+        if (message.content === prefix + "help formatting") {
+            message.reply("same as here: <https://en.scratch-wiki.info/wiki/Block_Plugin/Syntax>\njust withought the [scratchblocks]");
+        }
+        if (message.content === prefix + "ping") {
+            message.reply("pong!");
+        }
+        if (message.content.startsWith(prefix + "make")) {
+            const block = await getblockimage(params.slice(1).join(" "))
+            const attachment = new MessageAttachment(block, "code_blocks.png");
+            message.reply({ files: [attachment] });
+        }
     }
-    if (message.content === prefix + "help") {
-        message.reply({
-            embeds: [
-                {
-                    color: 65290,
-                    type: "rich",
-                    title: "help",
-                    description: "here is what I got!",
-                    fields: [
-                        {
-                            name: "help",
-                            value: "shows this message!",
-                            inline: true,
-                        },
-                        {
-                            name: "config",
-                            value: "configure this bot.",
-                            inline: true,
-                        },
-                        {
-                            name: "make",
-                            value: "replies with scratch block(s) of the text you provide.",
-                            inline: true,
-                        },
-                        {
-                            name: "help formatting",
-                            value: "shows a help message for formatting the make message.",
-                            inline: true,
-                        },
-                    ],
-                },
-            ],
+    catch(err){
+        const date_ob = new Date(),
+        date = ("0" + date_ob.getDate()).slice(-2),
+        hours = date_ob.getHours(),
+        minutes = date_ob.getMinutes(),
+        seconds = date_ob.getSeconds(),
+        timestamp = `${date} ${hours}:${minutes}:${seconds}`;
+        console.error('got error at'+timestamp+'added to logs');
+        fs.writeFile("./error.log", timestamp+'\n'+err, (err) => {
+            if (err) throw err;
         });
-    }
-    if (message.content === prefix + "help formatting") {
-        message.reply("same as here: <https://en.scratch-wiki.info/wiki/Block_Plugin/Syntax>\njust withought the [scratchblocks]");
-    }
-    if (message.content === prefix + "ping") {
-        message.reply("pong!");
-    }
-    if (message.content.startsWith(prefix + "make")) {
-        const block = await getblockimage(params.slice(1).join(" "))
-        const attachment = new MessageAttachment(block, "code_blocks.png");
-        message.reply({ files: [attachment] });
     }
 });
 function writetoconfig() {
