@@ -85,7 +85,7 @@ client.on("messageCreate", async (message) => {
         seconds = date_ob.getSeconds(),
         timestamp = `${date} ${hours}:${minutes}:${seconds}`;
         console.error('got error at'+timestamp+'added to logs');
-        fs.writeFile("./error.log", timestamp+'\n'+err, (err) => {
+        fs.writeFile("./error.log", timestamp+'\n'+err+'\n\n', (err) => {
             if (err) throw err;
         });
     }
