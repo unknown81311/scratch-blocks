@@ -3,6 +3,7 @@ const client = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_
 let config = require("./config.json");
 const fs = require("fs");
 const puppeteer = require("puppeteer");
+client.user.setActivity('use -help for command help!');
 
 const sleep = ms => new Promise( res => setTimeout(res, ms));
 
@@ -17,7 +18,7 @@ client.on('interactionCreate', interaction => {
 client.on("messageCreate", async (message) => {
     try{
         config=require("./config.json");
-        const prefix = config.prefix ? config.prefix : "!";
+        const prefix = config.prefix ? config.prefix : "-";
         let params;
         if (message.content.startsWith(prefix)) params = message.content.split(" ");
     
@@ -61,6 +62,16 @@ client.on("messageCreate", async (message) => {
                             {
                                 name: "help formatting",
                                 value: "shows a help message for formatting the make message.",
+                                inline: true,
+                            },
+                            {
+                                name: "a2a",
+                                value: "shows a ask to ask message.",
+                                inline: true,
+                            },
+                            {
+                                name: "h2a",
+                                value: "shows a how to ask message.",
                                 inline: true,
                             },
                         ],
