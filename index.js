@@ -3,12 +3,12 @@ const client = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_
 let config = require("./config.json");
 const fs = require("fs");
 const puppeteer = require("puppeteer");
-client.user.setActivity('use -help for command help!');
 
 const sleep = ms => new Promise( res => setTimeout(res, ms));
 
 client.on("ready", () => {
     console.log(`Logged in as ${client.user.tag}!`);
+    client.user.setActivity('use -help for command help!');
 });
 
 client.on('interactionCreate', interaction => {
