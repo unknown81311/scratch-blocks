@@ -1,5 +1,5 @@
 const { Client, Intents, MessageAttachment } = require("discord.js");
-const client = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES] });
+const client = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES, Intents.FLAGS.GUILD_MESSAGE_REACTIONS] });
 let config = require("./config.json");
 const fs = require("fs");
 const puppeteer = require("puppeteer");
@@ -10,10 +10,13 @@ client.on("ready", () => {
     console.log(`Logged in as ${client.user.tag}!`);
 });
 
+client.on('interactionCreate', interaction => {
+    console.log(interaction);
+});
+
 client.on("messageCreate", async (message) => {
     try{
         config=require("./config.json");
-        console.log(config.prefix,message.content)
         const prefix = config.prefix ? config.prefix : "!";
         let params;
         if (message.content.startsWith(prefix)) params = message.content.split(" ");
@@ -65,16 +68,33 @@ client.on("messageCreate", async (message) => {
                 ],
             });
         }
-        if (message.content === prefix + "help formatting") {
+        if (message.content.startsWith(prefix + "help formatting")) {
             message.reply("same as here: <https://en.scratch-wiki.info/wiki/Block_Plugin/Syntax>\njust withought the [scratchblocks]");
         }
-        if (message.content === prefix + "ping") {
-            message.reply("pong!");
+        if (message.content.startsWith(prefix + "a2a")) {
+            message.reply("https://images-ext-1.discordapp.net/external/lfeodonGv5QNPMUO0Nn6G2VlpwXbhqTz76uM0P2mM2A/%3Fwidth%3D813%26height%3D678/https/media.discordapp.net/attachments/425764369197170690/545810894710636555/ask-1.png");
+        }
+        if (message.content.startsWith(prefix + "h2a")) {
+            message.reply({"embeds":[{'type':'rich','title':'How To Ask For Help','color':'46e1ec','fields':[{'name':'When Asking For Help, You Should Send:','value':'_ _- What your program should do \n - What your program currently does \n - All relevant code and files related to the issue \n - What you have tried \n**Feel free to post images or other files if you think they could be helpful**','inline':false}]}]});
         }
         if (message.content.startsWith(prefix + "make")) {
             const block = await getblockimage(params.slice(1).join(" "))
-            const attachment = new MessageAttachment(block, "code_blocks.png");
-            message.reply({ files: [attachment] });
+            const attachment = new MessageAttachment(block, "image.png");
+                const newMessage = await message.reply({ files: [attachment] });
+                newMessage.react('🗑️');
+
+                const filter = (reaction, user) => {
+                    return reaction.emoji.name === '🗑️' && user.id === message.author.id;
+                };
+
+                newMessage.awaitReactions({filter,max:1,time:60000,errors:['time']})
+                    .then(collected => {
+                        const reaction = collected.first();
+                
+                        if (reaction.emoji.name === '🗑️') {
+                            newMessage.delete();
+                        }
+                    }).catch(e=>{newMessage.reactions.removeAll()});
         }
     }
     catch(err){
