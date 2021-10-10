@@ -6,6 +6,7 @@ const puppeteer = require("puppeteer");
 const fetch = require('node-fetch');
 
 const sleep = ms => new Promise( res => setTimeout(res, ms));
+let coolDown = new Map();
 
 client.on("ready", () => {
     console.log(`Logged in as ${client.user.tag}!`);
@@ -13,23 +14,21 @@ client.on("ready", () => {
 });
 client.on("messageCreate", async (message) => {
     try{
-        if(RegExp(/^https:\/\/scratch\.mit\.edu\/projects\/\d{9}|\/$/).test(message.content)){
-            const embed = await getScratchProjectImage(message.content.replace(/\/$/,''));
-            const newMessage = await message.reply({embeds:embed});
-            newMessage.react('🗑️');
+        if (RegExp(/^https:\/\/scratch\.mit\.edu\/projects\/\d{9}|\/$/).test(message.content)) {
+            if (coolDown.has(message.author.id)) {
+                if (coolDown.get(message.author.id) < (new Date().getTime() / 1000 - 30) * 1000) {
+                    coolDown.set(message.author.id, (new Date().getTime() / 1000 + 30) * 1000)
+                    console.log('1',coolDown);
 
-            const filter = (reaction, user) => {
-                return reaction.emoji.name === '🗑️' && user.id === message.author.id;
-            };
-
-            newMessage.awaitReactions({filter,max:1,time:60000,errors:['time']})
-                .then(collected => {
-                    const reaction = collected.first();
-            
-                    if (reaction.emoji.name === '🗑️') {
-                        newMessage.delete();
-                    }
-                }).catch(e=>{newMessage.reactions.removeAll()});
+                    await sendembed(message);
+                } else {
+                    console.log('2',coolDown);
+                }
+            } else {
+                console.log('3',coolDown);
+                coolDown.set(message.author.id, (new Date().getTime() / 1000 + 30) * 1000);
+                await sendembed(message);
+            }
         }
 
         config=require("./config.json");
@@ -108,8 +107,6 @@ client.on("messageCreate", async (message) => {
             const attachment = new MessageAttachment(block, "image.png");
                 const newMessage = await message.reply({ files: [attachment] });
                 newMessage.react('🗑️');
-                newMessage.react('👍');
-                newMessage.react('👎');
 
                 const filter = (reaction, user) => {
                     return reaction.emoji.name === '🗑️' && user.id === message.author.id;
@@ -145,7 +142,6 @@ function writetoconfig() {
     });
 }
 async function getScratchProjectImage(site) {
-    console.log(site.match(/\d{9}$/)[0])
     const 
         browser = await puppeteer.launch(),
         page = await browser.newPage();
@@ -158,7 +154,6 @@ async function getScratchProjectImage(site) {
 
     const apijson = await fetch(`https://api.scratch.mit.edu/users/${Name}/projects/${id}`)
         .then(res => res.json()).then((json)=>{return json});
-    console.log(apijson);
     return [
     {
       "title": apijson.title,
@@ -195,5 +190,35 @@ async function getblockimage(code) {
     const imageBuffer = await content.screenshot({ omitBackground: true });
     await browser.close();
     return imageBuffer;
+}
+
+async function sendembed(message) {
+    const embed = await getScratchProjectImage(message.content.replace(/\/$/, ''));
+    const newMessage = await message.reply({
+        embeds: embed
+    });
+    newMessage.react('🗑️');
+    newMessage.react('👍');
+    newMessage.react('👎');
+    
+    const filter = (reaction, user) => {
+        return reaction.emoji.name === '🗑️' && user.id === message.author.id;
+    };
+    
+    newMessage.awaitReactions({
+        filter,
+        max: 1,
+        time: 60000,
+        errors: ['time']
+    })
+    .then(collected => {
+        const reaction = collected.first();
+    
+        if (reaction.emoji.name === '🗑️') {
+            newMessage.delete();
+        }
+    }).catch(e => {
+        newMessage.reactions.removeAll()
+    });
 }
 client.login(config.token);
