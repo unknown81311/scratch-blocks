@@ -3,6 +3,7 @@ const client = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_
 let config = require("./config.json");
 const fs = require("fs");
 const puppeteer = require("puppeteer");
+const fetch = require('node-fetch');
 
 const sleep = ms => new Promise( res => setTimeout(res, ms));
 
@@ -10,13 +11,27 @@ client.on("ready", () => {
     console.log(`Logged in as ${client.user.tag}!`);
     client.user.setActivity('use -help for command help!');
 });
-
-client.on('interactionCreate', interaction => {
-    console.log(interaction);
-});
-
 client.on("messageCreate", async (message) => {
     try{
+        if(RegExp(/^https:\/\/scratch\.mit\.edu\/projects\/\d{9}|\/$/).test(message.content)){
+            const embed = await getScratchProjectImage(message.content.replace(/\/$/,''));
+            const newMessage = await message.reply({embeds:embed});
+            newMessage.react('🗑️');
+
+            const filter = (reaction, user) => {
+                return reaction.emoji.name === '🗑️' && user.id === message.author.id;
+            };
+
+            newMessage.awaitReactions({filter,max:1,time:60000,errors:['time']})
+                .then(collected => {
+                    const reaction = collected.first();
+            
+                    if (reaction.emoji.name === '🗑️') {
+                        newMessage.delete();
+                    }
+                }).catch(e=>{newMessage.reactions.removeAll()});
+        }
+
         config=require("./config.json");
         const prefix = config.prefix ? config.prefix : "-";
         let params;
@@ -93,6 +108,8 @@ client.on("messageCreate", async (message) => {
             const attachment = new MessageAttachment(block, "image.png");
                 const newMessage = await message.reply({ files: [attachment] });
                 newMessage.react('🗑️');
+                newMessage.react('👍');
+                newMessage.react('👎');
 
                 const filter = (reaction, user) => {
                     return reaction.emoji.name === '🗑️' && user.id === message.author.id;
@@ -115,7 +132,8 @@ client.on("messageCreate", async (message) => {
         minutes = date_ob.getMinutes(),
         seconds = date_ob.getSeconds(),
         timestamp = `${date} ${hours}:${minutes}:${seconds}`;
-        console.error('got error at'+timestamp+'added to logs');
+        //console.error('got error at'+timestamp+'added to logs');
+        console.error(err);
         fs.writeFile("./error.log", timestamp+'\n'+err+'\n\n', (err) => {
             if (err) throw err;
         });
@@ -126,6 +144,46 @@ function writetoconfig() {
         if (err) throw err;
     });
 }
+async function getScratchProjectImage(site) {
+    console.log(site.match(/\d{9}$/)[0])
+    const 
+        browser = await puppeteer.launch(),
+        page = await browser.newPage();
+    await page.goto(site);
+    await sleep(1000);
+    const 
+        Name = await page.$eval(`.title>a`, el => el.innerText),
+        id = site.match(/\d{9}$/)[0]
+    await browser.close();
+
+    const apijson = await fetch(`https://api.scratch.mit.edu/users/${Name}/projects/${id}`)
+        .then(res => res.json()).then((json)=>{return json});
+    console.log(apijson);
+    return [
+    {
+      "title": apijson.title,
+      "description": apijson.description,
+      "url": site,
+      "color": 16771840,
+      "fields": [
+        {
+          "name": "[ see inside ]",
+          "value": site+"/editor",
+          "inline": true
+        }
+      ],
+      "author": {
+        "name": Name,
+        "url": "https://scratch.mit.edu/users/"+Name,
+        "icon_url": apijson.author.profile.images["90x90"]
+      },
+      "image": {
+        "url": apijson.images["282x218"]
+      }
+    }
+  ]
+}
+
 async function getblockimage(code) {
     const browser = await puppeteer.launch();
     const page = await browser.newPage();
