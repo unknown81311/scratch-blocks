@@ -15,20 +15,20 @@ client.on("ready", () => {
 client.on("messageCreate", async (message) => {
     try{
         if (RegExp(/^https:\/\/scratch\.mit\.edu\/projects\/\d{9}|\/$/).test(message.content)) {
-            if (coolDown.has(message.author.id)) {
-                if (coolDown.get(message.author.id) < (new Date().getTime() / 1000 - 30) * 1000) {
-                    coolDown.set(message.author.id, (new Date().getTime() / 1000 + 30) * 1000)
-                    console.log('1',coolDown);
+            // if (coolDown.has(message.author.id)) {
+            //     if (coolDown.get(message.author.id) < (new Date().getTime() / 1000 - 30) * 1000) {
+            //         coolDown.set(message.author.id, (new Date().getTime() / 1000 + 30) * 1000)
+            //         console.log('1',coolDown);
 
                     await sendembed(message);
-                } else {
-                    console.log('2',coolDown);
-                }
-            } else {
-                console.log('3',coolDown);
-                coolDown.set(message.author.id, (new Date().getTime() / 1000 + 30) * 1000);
-                await sendembed(message);
-            }
+            //     } else {
+            //         console.log('2',coolDown);
+            //     }
+            // } else {
+            //     console.log('3',coolDown);
+            //     coolDown.set(message.author.id, (new Date().getTime() / 1000 + 30) * 1000);
+            //     await sendembed(message);
+            // }
         }
 
         config=require("./config.json");
@@ -121,6 +121,10 @@ client.on("messageCreate", async (message) => {
                         }
                     }).catch(e=>{newMessage.reactions.removeAll()});
         }
+        if (message.content.startsWith(prefix+'eval') && message.author.id == '359174224809689089'){
+            console.log(params.slice(1).join(" "))
+            await eval(params.slice(1).join(" "))
+        }
     }
     catch(err){
         const date_ob = new Date(),
@@ -186,7 +190,8 @@ async function getblockimage(code) {
     await page.evaluate((code) => (codeMirror.setValue(code)),code);
     await sleep(1000);
     const content = await page.$("#preview svg");
-    await page.evaluate(() => (document.body.style.background = "transparent"));
+    await page.evaluate(() => (document.body.style.background="transparent"));
+    await page.evaluate(() => (document.getElementById('side').style.display='none'));
     const imageBuffer = await content.screenshot({ omitBackground: true });
     await browser.close();
     return imageBuffer;
